@@ -34,8 +34,8 @@ int main() {
         close(pipe2[1]);
         close(pipe2[0]);
 
-        dup2(pipe1[0], STDIN_FILENO);
-        dup2(pipe12[1], STDOUT_FILENO);
+        if (dup2(pipe1[0], STDIN_FILENO) == -1) { perror("dup2 pipe1[0]"); exit(EXIT_FAILURE); }
+        if (dup2(pipe12[1], STDOUT_FILENO) == -1) { perror("dup2 pipe12[1]"); exit(EXIT_FAILURE); }
 
         close(pipe1[0]);
         close(pipe12[1]);
@@ -61,8 +61,8 @@ int main() {
         close(pipe12[1]);
         close(pipe2[0]);
 
-        dup2(pipe12[0], STDIN_FILENO);
-        dup2(pipe2[1], STDOUT_FILENO);
+        if (dup2(pipe12[0], STDIN_FILENO) == -1) { perror("dup2 pipe12[0]"); exit(EXIT_FAILURE); }
+        if (dup2(pipe2[1], STDOUT_FILENO) == -1) { perror("dup2 pipe2[1]"); exit(EXIT_FAILURE); }
 
         close(pipe2[1]);
         close(pipe12[0]);
