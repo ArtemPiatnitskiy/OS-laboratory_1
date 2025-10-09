@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -std=c99 -g -Iinclude
+CFLAGS = -Wall -Wextra -std=c99 -g -I include
 
 HEADERS = include/string_to_lowercase.h include/space_replace.h
 

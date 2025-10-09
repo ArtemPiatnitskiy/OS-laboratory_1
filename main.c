@@ -4,11 +4,28 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <string.h>
+#include <errno.h>
 
 #define RED_COLOR    "\x1b[31m" // child process output color
 #define GREEN_COLOR  "\x1b[32m" // parent process output color
+#define STANDARD_COLOR "\x1b[0m" // Standard color
 
 
+
+static ssize_t write_all(int fd, const void *buf, size_t count) {
+    const char *p = buf;
+    size_t left = count;
+    while (left > 0) {
+        ssize_t w = write(fd, p, left);
+        if (w == -1) {
+            if (errno == EINTR) continue; // Выполнение прервано
+            return -1; 
+        }
+        left -= (size_t)w;
+        p += w;
+    }
+    return (ssize_t)count;
+}
 
 
 int main() {
@@ -82,20 +99,19 @@ int main() {
 
         char *buffer = NULL;
         size_t capacity = 0;
-        ssize_t nread = getline(&buffer, &capacity, stdin);
-        if (nread == -1) {
-            perror("getline error");
-            free(buffer);
-            close(pipe1[1]);
-            close(pipe2[0]);
-            waitpid(pid1, NULL, 0);
-            waitpid(pid2, NULL, 0);
-            exit(EXIT_FAILURE);
+        ssize_t nread;
+        while ((nread = getline(&buffer, &capacity, stdin)) != -1) {
+            if (write_all(pipe1[1], buffer, nread) == -1) {
+                perror("write_all to pipe1");
+                free(buffer);
+                close(pipe1[1]);
+                close(pipe2[0]);
+                waitpid(pid1, NULL, 0);
+                waitpid(pid2, NULL, 0);
+                exit(EXIT_FAILURE);
+            }
         }
-
-        ssize_t nw = write(pipe1[1], buffer, nread);
-        if (nw == -1) perror("write to pipe1");
-       
+ 
         close(pipe1[1]);
         free(buffer);
 

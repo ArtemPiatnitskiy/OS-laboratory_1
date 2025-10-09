@@ -8,12 +8,16 @@
 int main() {
     char *str1 = NULL;
     size_t len = 0;
-    if (getline(&str1, &len, stdin) == -1) {
-        perror("Ошибка чтения строки");
-        return 1;
+    ssize_t nread;
+    while ((nread = getline(&str1, &len, stdin)) != -1) {
+        space_replace(str1);
+        if (fwrite(str1, 1, nread, stdout) != (size_t)nread) {
+            fflush(stdout);
+            perror("Ошибка записи в stdout");
+            free(str1);
+            return 1;
+        }
     }
-    space_replace(str1);
-    printf("%s", str1);
     free(str1);
     return 0;
 }
