@@ -35,7 +35,7 @@ run_one() {
     if [ "$code" -eq 124 ] 2>/dev/null; then
       printf "TIMEOUT %s\n" "$id"
     else
-      printf "ERROR %s (exit %d)\n" "$id" "$code"
+      printf "\x1b[0mERROR %s (exit %d)\n" "$id" "$code"
     fi
     rm -f "$tmpout"
     return 1

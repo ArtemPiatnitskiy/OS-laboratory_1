@@ -12,12 +12,12 @@ CHILD2 = child2
 all: $(TARGET) $(CHILD1) $(CHILD2)
 
 # main слинковывается с общими модулями
-$(TARGET): main.o src/string_to_lowercase.o src/space_replace.o
+$(TARGET): src/main.o src/string_to_lowercase.o src/space_replace.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 # Правило компиляции main.c
 main.o: main.c $(HEADERS)
-	$(CC) $(CFLAGS) -c main.c -o main.o
+	$(CC) $(CFLAGS) -c src/main.c -o src/main.o
 
 # Универсальное правило для исходников в src
 src/%.o: src/%.c $(HEADERS)
