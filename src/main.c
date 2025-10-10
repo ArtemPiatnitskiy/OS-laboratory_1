@@ -5,36 +5,11 @@
 #include <sys/wait.h>
 #include <string.h>
 #include <errno.h>
+#include "rwstdio.h"
 
 #define RED_COLOR    "\x1b[31m" // child process output color
 #define GREEN_COLOR  "\x1b[32m" // parent process output color
 #define STANDARD_COLOR "\x1b[0m" // Standard color
-
-
-// Функция для записи всех данных в pipe
-// Она является статичной, так как используется только в этом файле, чтобы избежать конфликтов
-//  на вход подаётся файловый дескриптор, буфер и количество байт для записи
-// В неё инициализируется указатель на буфер и количество оставшихся байт
-// В цикле пока остались байты для записи, вызывается write и пишется в pipe
-// Если write возвращает -1 и errno равен EINTR, то цикл продолжается
-// ERRNO EINTR означает, что выполнение было прервано сигналом и нужно повторить попытку. Errno из библиотеки errno.h
-// Уменьшаем количество оставшихся байт и сдвигаем указатель на буфер
-// Если всё прошло успешно, возвращается общее количество записанных байт
-// Если произошла ошибка, возвращается -1
-static ssize_t write_all(int fd, const void *buf, size_t count) {
-    const char *p = buf;
-    size_t left = count;
-    while (left > 0) {
-        ssize_t w = write(fd, p, left);
-        if (w == -1) {
-            if (errno == EINTR) continue; // Выполнение прервано
-            return -1; 
-        }
-        left -= (size_t)w;
-        p += w;
-    }
-    return (ssize_t)count;
-}
 
 
 int main() {
@@ -136,10 +111,15 @@ int main() {
         // Если write_all возвращает -1, выводим сообщение об ошибке, освобождаем память, закрываем pipe и ждём завершения дочерних процессов
         // После окончания ввода закрываем pipe1[1] и освобождаем память
         char *buffer = NULL;
-        size_t capacity = 0;
-        ssize_t nread;
-        while ((nread = getline(&buffer, &capacity, stdin)) != -1) {
-            if (write_all(pipe1[1], buffer, nread) == -1) {
+        size_t len = 0;
+        buffer = read_all_fd(STDIN_FILENO, &len);
+        if (buffer == NULL) {
+            perror("Ошибка чтения из stdin");
+            return 1;
+        }
+
+        if (len > 0) {
+            if (write_all_fd(pipe1[1], buffer, len) == -1) {
                 perror("write_all to pipe1");
                 free(buffer);
                 close(pipe1[1]);
@@ -149,20 +129,17 @@ int main() {
                 exit(EXIT_FAILURE);
             }
         }
- 
         close(pipe1[1]);
         free(buffer);
 
         // Чтение из pipe2 и вывод в стандартный вывод
-        // В цикле читаем из pipe2 и пишем в stdout
-        // Пишем мы временным буфером по 1024 байта
-        // Если fwrite записывает не то количество байт, что прочитали, выводим сообщение об ошибке и выходим из цикла
-        char buf[1024];
+        // В цикле читаем из pipe2 и пишем в stdout с помощью write_all_fd
+        // Если write записывает не то количество байт, что прочитали, выводим сообщение об ошибке и выходим из цикла
+        char buf[4096];
         ssize_t r;
         while ((r = read(pipe2[0], buf, sizeof(buf))) > 0) {
-            ssize_t written = fwrite(buf, 1, r, stdout);
-            if (written != r) {
-                perror("fwrite");
+            if (write_all_fd(STDOUT_FILENO, buf, (size_t)r) == -1) {
+                perror("write to stdout");
                 break;
             }
         }

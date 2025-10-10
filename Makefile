@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -g -I include
 
-HEADERS = include/string_to_lowercase.h include/space_replace.h
+HEADERS = include/string_to_lowercase.h include/space_replace.h include/rwstdio.h
 
 # Входные файлы и цели
 TARGET = program
@@ -12,7 +12,7 @@ CHILD2 = child2
 all: $(TARGET) $(CHILD1) $(CHILD2)
 
 # main слинковывается с общими модулями
-$(TARGET): src/main.o src/string_to_lowercase.o src/space_replace.o
+$(TARGET): src/main.o src/string_to_lowercase.o src/space_replace.o src/rwstdio.o
 	$(CC) $(CFLAGS) -o $@ $^
 
 # Правило компиляции main.c
@@ -24,12 +24,12 @@ src/%.o: src/%.c $(HEADERS)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 # Сборка child1 как отдельного исполняемого файла
-$(CHILD1): src/child1.c src/string_to_lowercase.c
-	$(CC) $(CFLAGS) -o $(CHILD1) src/child1.c src/string_to_lowercase.c
+$(CHILD1): src/child1.c src/string_to_lowercase.c src/rwstdio.c
+	$(CC) $(CFLAGS) -o $(CHILD1) src/child1.c src/string_to_lowercase.c src/rwstdio.c
 
 # Сборка child2 как отдельного исполняемого файла
-$(CHILD2): src/child2.c src/space_replace.c
-	$(CC) $(CFLAGS) -o $(CHILD2) src/child2.c src/space_replace.c
+$(CHILD2): src/child2.c src/space_replace.c src/rwstdio.c
+	$(CC) $(CFLAGS) -o $(CHILD2) src/child2.c src/space_replace.c src/rwstdio.c
 
 # Очистка
 clean:
